@@ -6,6 +6,7 @@ import (
 )
 
 type Tracer interface {
+	Trace(...interface{})
 }
 
 type tracer struct {
