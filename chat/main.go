@@ -1,11 +1,15 @@
 package main
 
 import (
+	"flag"
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/kara9renai/chat-app-go/trace"
 )
 
 type templateHandler struct {
@@ -22,11 +26,19 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	const port = ":8080"
-	http.Handle("/", &templateHandler{filename: "chat.html"})
+	var addr = flag.String("addr", ":8080", "The addr of the application.")
+	flag.Parse()
 
-	log.Println("Starting web server on", nil)
-	if err := http.ListenAndServe(port, nil); err != nil {
-		log.Fatal("ListenAndServe: ", err)
+	r := newRoom()
+	r.tracer = trace.New(os.Stdout)
+
+	http.Handle("/", &templateHandler{filename: "chat.html"})
+	http.Handle("/room", r)
+
+	go r.run()
+
+	log.Println("Starting web server on", *addr)
+	if err := http.ListenAndServe(*addr, nil); err != nil {
+		log.Fatal("ListenAndServe:", err)
 	}
 }
